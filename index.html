@@ -307,9 +307,9 @@
             function (gltf) {
                 const model = gltf.scene;
                 // 大きさを調整
-                model.scale.set(0.5, 0.5, 0.5); 
+                model.scale.set(1, 1, 1); 
                 // 置く場所を調整 (x, y, z)
-                model.position.set(0, 0, -50); 
+                model.position.set(0, 0, -100); 
                 // 影の設定
                 model.traverse((child) => {
                     if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
