@@ -163,11 +163,17 @@
 
         // --- Firebase Config & Init ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : '3d-study-quest-epic';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "mock", authDomain: "mock", projectId: "mock" // Local fallback
-        };
+        {
+  apiKey: "AIzaSyDOQk1zTwmBysmIqITKv3iNalT_DAu0jCw",
+  authDomain: "dproject-c8b3f.firebaseapp.com",
+  projectId: "dproject-c8b3f",
+  storageBucket: "dproject-c8b3f.firebasestorage.app",
+  messagingSenderId: "591446674808",
+  appId: "1:591446674808:web:80ec3a2c7c1a3454360c8d",
+  measurementId: "G-G9J0BL1C4G"
+}
         
-        let app, db, auth, isFirebaseActive = false;
+        let app, db, auth, isFirebaseActive = true;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
