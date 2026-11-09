@@ -28,7 +28,7 @@
         /* ロビー画面 */
         #lobby-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1e3a8a, #0f172a); display: flex; align-items: center; justify-content: center; z-index: 50; pointer-events: auto; }
         
-        /* クエストモーダル (CRITICAL: Ensure pointer-events is auto and z-index is high) */
+        /* クエストモーダル */
         #quest-modal-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(5px); z-index: 9999; }
 
         /* チャットUI */
@@ -161,9 +161,12 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config & Init ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : '3d-study-quest-epic';
-        {
+        // ==========================================
+        // 🔴 Firebase 設定エリア (ここだけ書き換えてください！)
+        // ==========================================
+        const firebaseConfig = {
+            // ▼▼▼ コピーしたコードの中身に書き換えてください ▼▼▼
+           {
   apiKey: "AIzaSyDOQk1zTwmBysmIqITKv3iNalT_DAu0jCw",
   authDomain: "dproject-c8b3f.firebaseapp.com",
   projectId: "dproject-c8b3f",
@@ -171,17 +174,21 @@
   messagingSenderId: "591446674808",
   appId: "1:591446674808:web:80ec3a2c7c1a3454360c8d",
   measurementId: "G-G9J0BL1C4G"
-}
+};
+            // ▲▲▲ ここまで ▲▲▲
+        };
+
+        // ★自動的にマルチプレイがオンになるように設定変更済みです
+        let app, db, auth, isFirebaseActive = true; 
         
-        let app, db, auth, isFirebaseActive = true;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            isFirebaseActive = typeof __firebase_config !== 'undefined';
         } catch(e) {
-            console.warn("Firebase Init Skipped (Local Mode)");
+            console.warn("Firebase Init Error:", e);
         }
+        // ==========================================
 
         let myUserId = null;
         let unsubscribePlayers = null;
@@ -198,7 +205,7 @@
             inGame: false,
             isQuesting: false,
             chatting: false,
-            pvpMode: false, // True when answering a defense quiz
+            pvpMode: false,
             isFlying: false
         };
 
@@ -263,9 +270,7 @@
 
         // --- Three.js Setup & Realistic Environment ---
         const scene = new THREE.Scene();
-        
-        // Day/Night Cycle Variables
-        let timeOfDay = 0; // 0 to Math.PI * 2
+        let timeOfDay = 0;
         
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
@@ -277,7 +282,6 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('game-container').appendChild(renderer.domElement);
 
-        // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
         
@@ -297,14 +301,13 @@
         const controls = new THREE.PointerLockControls(camera, renderer.domElement);
         camera.position.set(0, 1.6, 0);
 
-        // Texture generation for buildings (windows)
         function createBuildingTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const context = canvas.getContext('2d');
             context.fillStyle = '#444';
             context.fillRect(0, 0, 128, 128);
-            context.fillStyle = '#88ccff'; // Window color
+            context.fillStyle = '#88ccff';
             for(let y=10; y<128; y+=20) {
                 for(let x=10; x<128; x+=20) {
                     if(Math.random() > 0.3) context.fillRect(x, y, 10, 15);
@@ -317,9 +320,7 @@
         }
         const buildingTex = createBuildingTexture();
 
-        // City & World Generation
         function generateWorld() {
-            // Ground
             const groundGeo = new THREE.PlaneGeometry(500, 500);
             const groundMat = new THREE.MeshStandardMaterial({ color: 0x3b5e2b, roughness: 0.8, metalness: 0.1 });
             const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -327,14 +328,12 @@
             ground.receiveShadow = true;
             scene.add(ground);
 
-            // Buildings
             const buildingMats = [
                 new THREE.MeshStandardMaterial({ color: 0x999999, map: buildingTex, roughness: 0.7 }),
                 new THREE.MeshStandardMaterial({ color: 0x778899, map: buildingTex, roughness: 0.7 }),
                 new THREE.MeshStandardMaterial({ color: 0xaa9988, map: buildingTex, roughness: 0.7 })
             ];
 
-            // Trees
             const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
             const leavesGeo = new THREE.ConeGeometry(2, 4, 8);
@@ -344,17 +343,14 @@
                 const x = (Math.random() - 0.5) * 200;
                 const z = (Math.random() - 0.5) * 200;
                 
-                // Keep center relatively clear
                 if (Math.abs(x) < 15 && Math.abs(z) < 15) continue;
 
                 if (Math.random() > 0.4) {
-                    // Create Building
                     const height = 10 + Math.random() * 40;
                     const w = 8 + Math.random() * 10;
                     const d = 8 + Math.random() * 10;
                     const geo = new THREE.BoxGeometry(w, height, d);
                     
-                    // Fix texture repeating based on size
                     const mat = buildingMats[Math.floor(Math.random() * buildingMats.length)].clone();
                     mat.map = mat.map.clone();
                     mat.map.repeat.set(w/10, height/10);
@@ -365,7 +361,6 @@
                     mesh.receiveShadow = true;
                     scene.add(mesh);
                 } else {
-                    // Create Tree
                     const treeGroup = new THREE.Group();
                     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
                     trunk.position.y = 1;
@@ -379,7 +374,6 @@
                     treeGroup.add(leaves);
                     treeGroup.position.set(x, 0, z);
                     
-                    // Random scale
                     const scale = 0.8 + Math.random() * 0.8;
                     treeGroup.scale.set(scale, scale, scale);
                     scene.add(treeGroup);
@@ -388,20 +382,17 @@
         }
         generateWorld();
 
-        // --- Monsters (NPCs) ---
         const enemies = [];
         
         function createSlimeMesh() {
             const group = new THREE.Group();
             const bodyGeo = new THREE.SphereGeometry(1.2, 16, 16);
-            // Squish the sphere
             bodyGeo.scale(1, 0.8, 1);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff3366, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 1;
             body.castShadow = true;
             
-            // Eyes
             const eyeGeo = new THREE.SphereGeometry(0.2, 8, 8);
             const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
             const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -425,7 +416,6 @@
         let questionQueue = [];
         function getNextQuestion() {
             if (questionQueue.length === 0) {
-                // シャッフルして問題を補充
                 questionQueue = [...questionsData].sort(() => Math.random() - 0.5);
             }
             return questionQueue.pop();
@@ -435,22 +425,15 @@
             const mesh = createSlimeMesh();
             mesh.position.set(x, 0, z);
             scene.add(mesh);
-            
-            enemies.push({ 
-                mesh: mesh, 
-                offset: Math.random() * 10,
-                type: 'npc'
-            });
+            enemies.push({ mesh: mesh, offset: Math.random() * 10, type: 'npc' });
         }
 
-        // Initial enemies
         for(let i=0; i<20; i++) {
             const angle = Math.random() * Math.PI * 2;
             const radius = 20 + Math.random() * 40;
             spawnEnemy(Math.cos(angle) * radius, Math.sin(angle) * radius);
         }
 
-        // --- Multiplayer Logic ---
         const remotePlayers = {}; 
         
         function createPlayerLabel(name, level) {
@@ -458,24 +441,21 @@
             canvas.width = 256; canvas.height = 128;
             const ctx = canvas.getContext('2d');
             
-            // Background
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.roundRect(10, 10, 236, 100, 20);
             ctx.fill();
             
-            // Level
-            ctx.fillStyle = '#facc15'; // yellow
+            ctx.fillStyle = '#facc15'; 
             ctx.font = 'bold 30px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(`Lv.${level}`, 128, 50);
             
-            // Name
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 36px sans-serif';
             ctx.fillText(name, 128, 95);
             
             const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false }); // Render on top
+            const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false }); 
             const sprite = new THREE.Sprite(mat);
             sprite.scale.set(3, 1.5, 1);
             sprite.position.y = 2.8;
@@ -485,7 +465,6 @@
         function createPlayerMesh(colorStr, name, level) {
             const group = new THREE.Group();
             
-            // Body (Capsule approximation)
             const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.6, 16);
             const bodyMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(colorStr), roughness: 0.5 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
@@ -493,7 +472,6 @@
             body.castShadow = true;
             group.add(body);
 
-            // Head (Sphere)
             const headGeo = new THREE.SphereGeometry(0.45, 16, 16);
             const headMat = new THREE.MeshStandardMaterial({ color: 0xffddaa, roughness: 0.4 });
             const head = new THREE.Mesh(headGeo, headMat);
@@ -501,21 +479,18 @@
             head.castShadow = true;
             group.add(head);
 
-            // Visor/Eyes (to show direction)
             const visorGeo = new THREE.BoxGeometry(0.6, 0.2, 0.3);
             const visorMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
             const visor = new THREE.Mesh(visorGeo, visorMat);
             visor.position.set(0, 1.85, 0.35);
             group.add(visor);
 
-            // Label
             const label = createPlayerLabel(name, level);
             group.add(label);
 
             return { group, labelSprite: label };
         }
 
-        // --- カスタム通知機能 (alertの代替) ---
         function showSystemNotification(msg) {
             const notif = document.createElement('div');
             notif.className = 'absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600/90 text-white px-6 py-4 rounded-xl shadow-2xl font-bold text-sm z-[9999] text-center whitespace-pre-line border-2 border-red-400 pointer-events-none';
@@ -528,7 +503,7 @@
             }, 6000);
         }
 
-        async function joinGame() {
+        function joinGame() {
             const nameVal = ui.nameInput.value.trim();
             gameState.name = nameVal || 'Player' + Math.floor(Math.random() * 1000);
             
@@ -537,13 +512,16 @@
             ui.hudName.innerText = gameState.name;
             updateHUD();
 
-            if (isFirebaseActive) {
-                try {
-                    const userCredential = await signInAnonymously(auth);
+            // ★超重要修正★：ブラウザにブロックされないよう、ボタンクリックと同時に即座に視点ロックを実行する
+            controls.lock();
+            gameState.inGame = true;
+
+            if (isFirebaseActive && auth) {
+                // 非同期（バックグラウンド）でFirebaseに接続して通信を開始する
+                signInAnonymously(auth).then((userCredential) => {
                     myUserId = userCredential.user.uid;
                     
-                    // DBに初期データをセット
-                    await setDoc(doc(db, "players", myUserId), {
+                    setDoc(doc(db, "players", myUserId), {
                         name: gameState.name,
                         color: gameState.color,
                         level: gameState.level,
@@ -554,7 +532,6 @@
                         lastActive: Date.now()
                     });
 
-                    // 他のプレイヤーの動きを監視
                     unsubscribePlayers = onSnapshot(collection(db, "players"), (snapshot) => {
                         const activeIds = new Set();
                         let leaderboardData = [];
@@ -563,26 +540,21 @@
                             const data = docSnap.data();
                             const id = docSnap.id;
                             
-                            // 10分以上更新がない場合は非アクティブとみなす
                             if (Date.now() - data.lastActive > 600000) return;
                             
                             if (id !== myUserId) {
                                 activeIds.add(id);
                                 if (!remotePlayers[id]) {
-                                    // 新規プレイヤーの生成
                                     const { group, labelSprite } = createPlayerMesh(data.color, data.name, data.level);
                                     scene.add(group);
                                     remotePlayers[id] = { group, labelSprite, targetPos: new THREE.Vector3(), targetRotY: 0 };
                                 }
-                                
-                                // 補間用の目標位置・回転を更新
                                 remotePlayers[id].targetPos.set(data.x, data.y, data.z);
                                 remotePlayers[id].targetRotY = data.ry;
                             }
                             leaderboardData.push({ name: data.name, level: data.level });
                         });
 
-                        // 退出したプレイヤーを削除
                         Object.keys(remotePlayers).forEach(id => {
                             if (!activeIds.has(id)) {
                                 scene.remove(remotePlayers[id].group);
@@ -590,7 +562,6 @@
                             }
                         });
 
-                        // ランキングUIの更新
                         leaderboardData.sort((a, b) => b.level - a.level);
                         ui.leaderboard.innerHTML = leaderboardData.slice(0, 5).map((p, i) => 
                             `<li class="flex justify-between items-center bg-gray-800/50 p-1 px-2 rounded">
@@ -599,14 +570,13 @@
                             </li>`
                         ).join('');
                     }, (error) => {
-                        console.warn("Firebase Warning (Players Snapshot):", error.message);
-                        if (isFirebaseActive) {
-                            showSystemNotification("データベースへのアクセス権限がありません。\nオフラインモードで続行します。");
+                        console.warn("Firebase Snapshot Error:", error.message);
+                        if(isFirebaseActive) {
+                            showSystemNotification("エラー: データベース接続に失敗しました。\nオフラインモードで続行します。");
                             isFirebaseActive = false;
                         }
                     });
 
-                    // チャットの監視
                     const chatQuery = query(collection(db, "chat"));
                     unsubscribeChat = onSnapshot(chatQuery, (snapshot) => {
                         snapshot.docChanges().forEach((change) => {
@@ -619,47 +589,36 @@
                                 ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
                             }
                         });
-                    }, (error) => {
-                        console.error("Firebase Error (Chat Snapshot):", error);
                     });
 
-                    // 自分に対する魔法攻撃（PvP）の監視
                     unsubscribeProjectiles = onSnapshot(collection(db, "attacks"), (snapshot) => {
                          snapshot.docChanges().forEach((change) => {
                              if(change.type === "added") {
                                  const data = change.doc.data();
                                  if(data.targetId === myUserId) {
-                                     // 被弾した！防衛クイズ開始
                                      triggerDefenseQuiz(data.attackerName);
-                                     // 攻撃データを削除
                                      deleteDoc(doc(db, "attacks", change.doc.id)).catch(()=>{});
                                  }
                              }
                          });
-                    }, (error) => {
-                        console.warn("Firebase Warning (Attacks Snapshot):", error.message);
                     });
 
-                } catch (e) {
-                    console.warn("Firebase Warning (Auth/Permissions):", e.message);
-                    showSystemNotification("データベースのアクセス権限エラーが発生しました。\nFirestoreの「セキュリティルール」をご確認ください。\n※オフラインモードでゲームを開始します。");
+                }).catch((e) => {
+                    console.warn("Firebase Login Error:", e.message);
+                    showSystemNotification("データベース権限エラーが発生しました。\n(※Firestoreのセキュリティルールを確認してください)\nオフラインモードで開始します。");
                     isFirebaseActive = false;
-                }
+                });
             }
-            
-            controls.lock();
-            gameState.inGame = true;
         }
 
         ui.joinBtn.addEventListener('click', joinGame);
 
-        // --- コントロール (WASD, ジャンプ, ダッシュ, 飛行) ---
+        // --- Controls & Logic ---
         const moveState = { forward: false, backward: false, left: false, right: false, jump: false, sprint: false, up: false, down: false };
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let canJump = false;
 
-        // キーのスタックを防ぐリセット処理
         function resetMovement() {
             moveState.forward = false; moveState.backward = false;
             moveState.left = false; moveState.right = false;
@@ -708,7 +667,6 @@
             }
         });
 
-        // チャット送信
         ui.chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = ui.chatInput.value.trim();
@@ -724,7 +682,6 @@
             ui.chatInputWrapper.style.display = 'none';
             ui.chatHint.style.display = 'block';
             gameState.chatting = false;
-            // クエスト中でなければ視点をロック
             if (!gameState.isQuesting) {
                 setTimeout(() => controls.lock(), 100);
             }
@@ -738,19 +695,16 @@
         
         controls.addEventListener('unlock', () => { 
             ui.crosshair.style.display = 'none'; 
-            resetMovement(); // マウスロック解除時も状態をリセット
+            resetMovement(); 
         });
 
-        // 画面クリックで視点を再ロック
         document.getElementById('game-container').addEventListener('mousedown', () => {
             if (gameState.inGame && !gameState.isQuesting && !gameState.chatting) {
                 controls.lock();
             }
         });
 
-        // --- 魔法発射とインタラクション (PvP) ---
         const raycaster = new THREE.Raycaster();
-        
         const projectiles = [];
         const projGeo = new THREE.SphereGeometry(0.2, 8, 8);
         const projMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
@@ -765,10 +719,8 @@
             scene.add(sphere);
             projectiles.push({ mesh: sphere, velocity: dir.multiplyScalar(50), life: 2.0 });
             
-            // レイキャストで即時ヒット判定
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             
-            // 敵（NPC）の判定 (距離20以内に制限)
             const npcMeshes = enemies.map(e => e.mesh);
             const npcHits = raycaster.intersectObjects(npcMeshes, true);
             if (npcHits.length > 0 && npcHits[0].distance < 20) {
@@ -781,7 +733,6 @@
                 }
             }
             
-            // 他プレイヤーの判定（PvP） (距離20以内に制限)
             if (isFirebaseActive) {
                 const playerGroups = Object.values(remotePlayers).map(p => p.group);
                 const playerHits = raycaster.intersectObjects(playerGroups, true);
@@ -807,22 +758,17 @@
             if (!gameState.inGame || gameState.isQuesting || gameState.chatting) return;
             if (e.button === 0 && controls.isLocked) {
                 shootMagic();
-                
-                // クロスヘアのアニメーション
                 ui.crosshair.classList.add('active');
                 setTimeout(() => ui.crosshair.classList.remove('active'), 200);
             }
         });
 
-        // --- クエスト（クイズ）システム (バグ修正済) ---
         function startQuest(questionData, isPvP = false) {
             gameState.isQuesting = true;
             gameState.pvpMode = isPvP;
             
-            // 🌟致命的バグの修正：明示的にマウスのロックを解除
             controls.unlock();
             
-            // UIの表示
             ui.questModal.style.display = 'flex';
             ui.qBadge.innerText = isPvP ? 'PvP DEFENSE' : 'BATTLE';
             ui.qBadge.className = isPvP ? 'bg-purple-600 text-white px-3 py-1 rounded-lg text-sm tracking-widest shadow-md' : 'bg-red-500 text-white px-3 py-1 rounded-lg text-sm tracking-widest shadow-md';
@@ -837,13 +783,11 @@
                 document.body.classList.add('pvp-alert');
             }
             
-            // 選択肢ボタンの生成
             questionData.options.forEach((opt, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'w-full bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 text-blue-900 font-bold py-4 px-6 rounded-xl text-left transition-colors text-lg flex items-center gap-4';
                 btn.innerHTML = `<span class="bg-white text-blue-500 rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-blue-100">${idx+1}</span> ${opt}`;
                 
-                // 🌟修正：onpointerdownを使用して確実にクリックを拾う
                 btn.onpointerdown = (e) => {
                     e.preventDefault();
                     handleAnswer(idx === questionData.a);
@@ -853,7 +797,7 @@
         }
 
         function triggerDefenseQuiz(attackerName) {
-            if(gameState.isQuesting) return; // すでにクイズ中なら無視
+            if(gameState.isQuesting) return;
             startQuest(getNextQuestion(), true);
         }
 
@@ -903,71 +847,49 @@
             ui.hudExpBar.style.width = `${pct}%`;
         }
 
-        // --- メインループ (アニメーションと物理演算) ---
         const clock = new THREE.Clock();
         let lastFirebaseUpdate = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             const delta = Math.min(clock.getDelta(), 0.1);
-            const time = clock.getElapsedTime();
-
-            // 昼夜サイクルのシミュレート
-            timeOfDay += delta * 0.05; 
-            const sunY = Math.sin(timeOfDay);
-            const sunZ = Math.cos(timeOfDay);
-            sunLight.position.set(0, sunY * 100, sunZ * 100);
             
-            if (sunY > 0) {
-                // 昼
-                scene.background.setHSL(0.6, 0.5, 0.5 + sunY * 0.3);
-                scene.fog.color.copy(scene.background);
-                sunLight.intensity = sunY * 1.2;
-                ambientLight.intensity = 0.4 + sunY * 0.4;
-            } else {
-                // 夜
-                scene.background.setHex(0x0a0a1a);
-                scene.fog.color.copy(scene.background);
-                sunLight.intensity = 0;
-                ambientLight.intensity = 0.1;
-            }
-
-            // モンスターのアニメーション（フワフワ浮く）
+            // モンスターのアニメーション
             enemies.forEach(e => {
-                e.mesh.position.y = Math.abs(Math.sin(time * 3 + e.offset)) * 1.5;
-                e.mesh.rotation.y += delta;
-            });
-
-            // 他プレイヤーの補間移動
-            Object.values(remotePlayers).forEach(p => {
-                p.group.position.lerp(p.targetPos, 0.1);
-                p.group.rotation.y += (p.targetRotY - p.group.rotation.y) * 0.1;
-                // ネームプレートを常にカメラに向ける
-                if(p.labelSprite) {
-                    p.labelSprite.quaternion.copy(camera.quaternion);
+                if(e.mesh.parent) {
+                    e.mesh.position.y = Math.abs(Math.sin(clock.getElapsedTime() * 3 + e.offset)) * 1.5;
                 }
             });
 
-            // 魔法（Projectile）の移動
-            for(let i = projectiles.length - 1; i >= 0; i--) {
+            // 魔法の弾（プロジェクタイル）のアニメーション
+            for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
                 p.mesh.position.addScaledVector(p.velocity, delta);
                 p.life -= delta;
-                if(p.life <= 0) {
+                if (p.life <= 0) {
                     scene.remove(p.mesh);
                     projectiles.splice(i, 1);
                 }
             }
+            
+            // 他プレイヤーのアニメーション（位置と回転を滑らかに補間）
+            Object.values(remotePlayers).forEach(p => {
+                p.group.position.lerp(p.targetPos, 0.1);
+                let diff = p.targetRotY - p.group.rotation.y;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                p.group.rotation.y += diff * 0.1;
+            });
 
+            // プレイヤーの移動制御（視点ロック時のみ）
             if (controls.isLocked) {
-                // プレイヤーの移動と物理演算
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 
                 if (!gameState.isFlying) {
-                    velocity.y -= 9.8 * 10.0 * delta; // 重力
+                    velocity.y -= 9.8 * 10.0 * delta;
                 } else {
-                    velocity.y -= velocity.y * 10.0 * delta; // 飛行時の空気抵抗
+                    velocity.y -= velocity.y * 10.0 * delta;
                     if (moveState.up) velocity.y += 40.0 * delta;
                     if (moveState.down) velocity.y -= 40.0 * delta;
                 }
@@ -975,51 +897,32 @@
                 direction.z = Number(moveState.forward) - Number(moveState.backward);
                 direction.x = Number(moveState.right) - Number(moveState.left);
                 direction.normalize(); 
-
+                
                 const currentSpeed = moveState.sprint ? (gameState.isFlying ? 120.0 : 80.0) : (gameState.isFlying ? 60.0 : 40.0);
-
                 if (moveState.forward || moveState.backward) velocity.z -= direction.z * currentSpeed * delta;
                 if (moveState.left || moveState.right) velocity.x -= direction.x * currentSpeed * delta;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
-
                 controls.getObject().position.y += (velocity.y * delta);
 
-                // 床に着地 (または下限)
                 if (controls.getObject().position.y < 1.6) {
                     velocity.y = 0;
                     controls.getObject().position.y = 1.6;
                     canJump = true;
                 } else if (!gameState.isFlying) {
-                    canJump = false; // 空中にいるときはジャンプ不可
+                    canJump = false;
                 }
-                
-                // 天井制限 (高すぎないように)
-                if (controls.getObject().position.y > 200) {
-                    controls.getObject().position.y = 200;
-                    if (velocity.y > 0) velocity.y = 0;
-                }
-                
-                // 定期的にFirebaseへ自分の位置を送信 (100ms毎)
+
+                // Firebaseへ自分の位置を送信（100ms毎）
                 if (isFirebaseActive && myUserId && Date.now() - lastFirebaseUpdate > 100) {
                     setDoc(doc(db, "players", myUserId), {
-                        name: gameState.name,
-                        color: gameState.color,
-                        level: gameState.level,
-                        x: camera.position.x,
-                        y: camera.position.y,
-                        z: camera.position.z,
-                        ry: camera.rotation.y,
-                        lastActive: Date.now()
-                    }, { merge: true }).catch((e) => {
-                        console.error("Firebase Error (Update Player):", e);
-                        isFirebaseActive = false; // Disable if permission fails during loop
-                    });
+                        name: gameState.name, color: gameState.color, level: gameState.level,
+                        x: camera.position.x, y: camera.position.y, z: camera.position.z, ry: camera.rotation.y, lastActive: Date.now()
+                    }, { merge: true }).catch(()=>{});
                     lastFirebaseUpdate = Date.now();
                 }
             }
-
             renderer.render(scene, camera);
         }
 
@@ -1029,9 +932,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // アニメーションループの開始
         animate();
-
     </script>
 </body>
 </html>
