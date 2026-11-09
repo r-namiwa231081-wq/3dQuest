@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; user-select: none; }
@@ -207,19 +208,29 @@
             isFlying: false
         };
 
-        // --- 5th Grade Curriculum Data ---
-        const questionsData = [
-            { subject: "算数", q: "分数の足し算です。\n「1/4 + 2/4」の答えは？", options: ["3/4", "3/8", "1/2"], a: 0 },
-            { subject: "算数", q: "たて5cm、横6cm、高さ2cmの直方体の体積は？", options: ["60cm³", "30cm³", "13cm³"], a: 0 },
-            { subject: "算数", q: "200円のノートが20%引きです。いくらになりますか？", options: ["160円", "180円", "40円"], a: 0 },
-            { subject: "算数", q: "三角形の面積を求める公式は？", options: ["底辺 × 高さ ÷ 2", "底辺 × 高さ", "半径 × 半径 × 3.14"], a: 0 },
-            { subject: "理科", q: "インゲンマメの発芽に必要な3つの条件は、水、空気と、もう一つは何？", options: ["適当な温度", "日光", "肥料"], a: 0 },
-            { subject: "理科", q: "メダカのオスとメスの見分け方。\n背びれに切れ込みがあるのはどっち？", options: ["オス", "メス", "どちらもない"], a: 0 },
-            { subject: "理科", q: "台風がよく発生する季節はいつ頃？", options: ["夏から秋", "春から夏", "冬"], a: 0 },
-            { subject: "社会", q: "日本の国土で一番広い面積を占めているのは？", options: ["山地・森林", "平野", "川・湖"], a: 0 },
-            { subject: "社会", q: "米の生産量が日本一多い都道府県はどこ？(※年によって変動あり)", options: ["新潟県", "北海道", "秋田県"], a: 0 },
-            { subject: "社会", q: "沖縄県など、一年中あたたかい気候を活かした農業を何という？", options: ["促成栽培", "抑制栽培", "二期作"], a: 0 },
+       // --- 問題データ（外部CSVから読み込み） ---
+        let questionsData = [
+            // 読み込みに失敗した時のための予備問題
+            { subject: "エラー", q: "問題データの読み込み中です...", options: ["-", "-", "-"], a: 0 }
         ];
+
+        // CSVファイルを読み込む処理
+        Papa.parse("questions.csv", {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                questionsData = results.data.map(row => {
+                    return {
+                        subject: row["教科"],
+                        q: row["問題文"],
+                        options: [row["選択肢1"], row["選択肢2"], row["選択肢3"]],
+                        a: parseInt(row["正解"]) - 1  // 1,2,3をプログラム用の0,1,2に自動変換
+                    };
+                });
+                console.log("問題リストを読み込みました！");
+            }
+        });
 
         // --- DOM Elements ---
         const ui = {
