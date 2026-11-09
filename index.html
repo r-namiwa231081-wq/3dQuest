@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; user-select: none; }
@@ -297,7 +298,25 @@
 
         const controls = new THREE.PointerLockControls(camera, renderer.domElement);
         camera.position.set(0, 1.6, 0);
-
+// --- 3Dモデル（建物の読み込み） ---
+        const loader = new THREE.GLTFLoader();
+        
+        // 試しに「castle.glb」というお城のファイルを読み込む設定
+        loader.load(
+            'castle.glb', // ← 後でGitHubにアップロードするファイル名
+            function (gltf) {
+                const model = gltf.scene;
+                // 大きさを調整
+                model.scale.set(5, 5, 5); 
+                // 置く場所を調整 (x, y, z)
+                model.position.set(0, 0, -20); 
+                // 影の設定
+                model.traverse((child) => {
+                    if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+                });
+                scene.add(model);
+            }
+        );
         function createBuildingTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
