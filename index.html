@@ -321,10 +321,8 @@
                 model.scale.set(1, 1, 1); 
                 // 置く場所を調整 (x, y, z)
                 model.position.set(0, 0, -100); 
-                // 影の設定
-                model.traverse((child) => {
-                    if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
-                });
+                
+              
                 scene.add(model);
             }
         );
@@ -366,7 +364,7 @@
             const leavesGeo = new THREE.ConeGeometry(2, 4, 8);
             const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
 
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 30; i++) {
                 const x = (Math.random() - 0.5) * 200;
                 const z = (Math.random() - 0.5) * 200;
                 
