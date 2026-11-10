@@ -281,6 +281,7 @@
         const scene = new THREE.Scene();
         let timeOfDay = 0;
         
+       
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
 
@@ -940,7 +941,7 @@
                 }
 
                 // Firebaseへ自分の位置を送信（100ms毎）
-                if (isFirebaseActive && myUserId && Date.now() - lastFirebaseUpdate > 100) {
+                if (isFirebaseActive && myUserId && Date.now() - lastFirebaseUpdate > 1000) {
                     setDoc(doc(db, "players", myUserId), {
                         name: gameState.name, color: gameState.color, level: gameState.level,
                         x: camera.position.x, y: camera.position.y, z: camera.position.z, ry: camera.rotation.y, lastActive: Date.now()
